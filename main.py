@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -13,19 +14,18 @@ BASE_URL = "https://parasol.vmguest.uni-jena.de/grac_crystal/#wordlist?corpname=
 def get_words_from_page(driver, url):
     driver.get(url)
 
-    try:
-        WebDriverWait(driver, 30).until(
-            EC.visibility_of_element_located((By.TAG_NAME, "thead"))
-        )
-    except Exception as e:
-        print(e)
-        return []
+    time.sleep(10)
+    WebDriverWait(driver, 30).until(
+            EC.visibility_of_element_located((By.CSS_SELECTOR, "._t.word"))
+    )
 
     attempts = 3
     for _ in range(attempts):
         try:
             words_from_page = driver.find_elements(By.CSS_SELECTOR, "._t.word")
-            return [word.text.strip() for word in words_from_page if word.text.strip() and word.text.strip() != "Word"]
+            if words_from_page is not None:
+                print(word.text.strip() for word in words_from_page if word.text.strip() and word.text.strip() != "Word")
+                return [word.text.strip() for word in words_from_page if word.text.strip() and word.text.strip() != "Word"]
         except StaleElementReferenceException:
             print("Attempting to re-fetch items...")
 
@@ -54,16 +54,16 @@ def get_ukrainian_word():
     return words
 
 
-async def translate_to_polish(ukrainian_words):
+async def translate_to_polish(count_of_translated_words, ukrainian_words):
     attempts = 10
     translated_dictionary = {}
 
     translator = Translator()
 
     try:
-        for i, word in enumerate(ukrainian_words, start=1):
+        for i, word in enumerate(ukrainian_words[count_of_translated_words:], start=count_of_translated_words):
 
-            if i % 500 == 0:
+            if i % 100 == 0:
                 print(f"Reinitializing Translator after {i} words")
                 translator = Translator()
 
@@ -75,7 +75,7 @@ async def translate_to_polish(ukrainian_words):
                         break
             if translated_word:
                 translated_dictionary[word] = translated_word.text.lower()
-                print(f"translated word {i} - {word}")
+                print(f"translated word {i+1} - {word}")
             else:
                 print(f"Failed to translate word: {word}")
             
@@ -93,6 +93,18 @@ def writte_word_into_file(translated_dictionary):
 
 
 if __name__ =="__main__":
+    count_of_translated_words = 0
+    translated_dictionary = {}
     words = get_ukrainian_word()
-    translated_dictionary = asyncio.run(translate_to_polish(words))
+
+    print(len(words))
+    print(count_of_translated_words)
+
+    while(count_of_translated_words < len(words)):
+        print("start translate words")
+        new_translation = asyncio.run(translate_to_polish(count_of_translated_words, words))
+        translated_dictionary.update(new_translation)
+        
+        count_of_translated_words = len(translated_dictionary)
+
     writte_word_into_file(translated_dictionary)
