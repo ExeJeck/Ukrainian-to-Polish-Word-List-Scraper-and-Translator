@@ -54,7 +54,7 @@ def get_ukrainian_word():
     return words
 
 
-async def translate_to_polish(count_of_translated_words, ukrainian_words):
+async def translation_into_given_language(language_of_translation, count_of_translated_words, ukrainian_words):
     attempts = 10
     translated_dictionary = {}
 
@@ -67,10 +67,10 @@ async def translate_to_polish(count_of_translated_words, ukrainian_words):
                 print(f"Reinitializing Translator after {i} words")
                 translator = Translator()
 
-            translated_word = await translator.translate(word, src="uk", dest="pl")
+            translated_word = await translator.translate(word, src="uk", dest=language_of_translation)
             if translated_word == None:
                 for _ in range(attempts):
-                    translated_word = await translator.translate(word, src="uk", dest="pl")
+                    translated_word = await translator.translate(word, src="uk", dest=language_of_translation)
                     if translated_word is not None:
                         break
             if translated_word:
@@ -86,7 +86,7 @@ async def translate_to_polish(count_of_translated_words, ukrainian_words):
 
 
 def writte_word_into_file(translated_dictionary):
-    with open("dictionary.txt", "w", encoding="utf-8") as file:
+    with open("en-dictionary.txt", "w", encoding="utf-8") as file:
         for word, translated_word in translated_dictionary.items():
             text_file_string = f"{word} - {translated_word}\n"
             file.write(text_file_string)
@@ -102,7 +102,7 @@ if __name__ =="__main__":
 
     while(count_of_translated_words < len(words)):
         print("start translate words")
-        new_translation = asyncio.run(translate_to_polish(count_of_translated_words, words))
+        new_translation = asyncio.run(translation_into_given_language("en",count_of_translated_words, words))
         translated_dictionary.update(new_translation)
         
         count_of_translated_words = len(translated_dictionary)
